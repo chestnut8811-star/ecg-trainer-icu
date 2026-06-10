@@ -1,5 +1,7 @@
 # 心電図トレーナー ICU EDITION
 
+**▶ ブラウザですぐ使う: https://chestnut8811-star.github.io/ecg-trainer-icu/**
+
 重症病棟(ICU/CCU/HCU)の看護師向けモニター心電図トレーニングアプリ。
 ベッドサイドモニターを模した**リアルタイムに動く心電図波形**で21種類の調律・不整脈を学び、クイズで判読力と初期対応を鍛えます。
 
@@ -23,6 +25,18 @@ npm run preview  # ビルド結果のプレビュー
 
 `npm run build` は vite-plugin-singlefile により全アセットをインライン化した
 単一の `dist/index.html` を出力します(これをコピーしたものがルートの `心電図トレーナー.html`)。
+
+### デプロイ(GitHub Pages)
+
+`docs/index.html` がそのままGitHub Pages(mainブランチ `/docs`)で配信されます。
+更新手順:
+
+```bash
+npm run build
+cp dist/index.html docs/index.html
+cp dist/index.html 心電図トレーナー.html
+git add -A && git commit -m "更新" && git push
+```
 
 ## 機能
 

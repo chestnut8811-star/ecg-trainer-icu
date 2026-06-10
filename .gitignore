@@ -1,0 +1,8 @@
+# 依存・ビルド成果物
+node_modules/
+dist/
+
+# ローカル設定・OSファイル
+.claude/
+.DS_Store
+*.local

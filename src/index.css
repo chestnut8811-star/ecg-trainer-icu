@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic",
+    sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font-dot: "DotGothic16", "IBM Plex Mono", monospace;
+
+  --color-bg: #04070b;
+  --color-bg2: #070d13;
+  --color-panel: #0a121b;
+  --color-panel2: #0e1923;
+  --color-ink: #dcebe2;
+  --color-mute: #74909c;
+  --color-line: #14222e;
+  --color-line2: #1f3447;
+
+  --color-phos: #36ff9c;
+  --color-phos-dim: #1d9e62;
+  --color-cyan: #3bd6f6;
+  --color-amber: #ffb648;
+  --color-orange: #ff8a4d;
+  --color-red: #ff4d5e;
+  --color-pink: #ff6ea9;
+  --color-yellow: #ffe066;
+
+  --animate-blink: blink 1.1s steps(1, end) infinite;
+  --animate-poweron: poweron 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  --animate-pulsebeat: pulsebeat 1.05s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 58% { opacity: 1; }
+  59%, 100% { opacity: 0.12; }
+}
+
+@keyframes poweron {
+  0% { transform: scaleY(0.04); filter: brightness(4) saturate(0.2); }
+  55% { transform: scaleY(1); }
+  100% { transform: scaleY(1); filter: brightness(1) saturate(1); }
+}
+
+@keyframes pulsebeat {
+  0%, 100% { transform: scale(1); }
+  12% { transform: scale(1.22); }
+  26% { transform: scale(1); }
+  38% { transform: scale(1.1); }
+  50% { transform: scale(1); }
+}
+
+html {
+  background: var(--color-bg);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  background-image: radial-gradient(circle, #0a141d 1px, transparent 1.2px);
+  background-size: 24px 24px;
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 画面端を暗く落とすビネット */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 120% 90% at 50% 20%,
+    transparent 55%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: var(--color-phos);
+  color: #03130a;
+}
+
+/* CRT スキャンライン(モニターパネル用オーバーレイ) */
+.scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(180, 255, 215, 0.028) 0px,
+    rgba(180, 255, 215, 0.028) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* 細身のスクロールバー */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1f3447 transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #1f3447;
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blink,
+  .animate-poweron,
+  .animate-pulsebeat {
+    animation: none !important;
+  }
+}

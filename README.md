@@ -1,6 +1,8 @@
 # 心電図トレーナー ICU EDITION
 
-**▶ ブラウザですぐ使う: https://chestnut8811-star.github.io/ecg-trainer-icu/**
+**▶ ブラウザですぐ使う**
+- モニター版(基本調律・不整脈): https://chestnut8811-star.github.io/ecg-trainer-icu/
+- **12誘導版(梗塞部位・脚ブロック・電気軸): https://chestnut8811-star.github.io/ecg-trainer-icu/12lead/**
 
 <img src="qr-card.png" alt="アプリ公開URLのQRコード" width="320">
 
@@ -11,7 +13,12 @@
 
 ## 使い方(いちばん簡単)
 
-**`心電図トレーナー.html` をダブルクリックするだけ**で、ブラウザが開いてそのまま使えます。
+目的に合わせて2つのアプリをダブルクリックで開けます(どちらもインストール不要の単一HTML):
+
+- **`心電図トレーナー.html`** … モニター版。基本調律・不整脈・致死性波形(II誘導)を動く波形＋音で学ぶ
+- **`12誘導心電図.html`** … 12誘導版。梗塞部位・脚ブロック・電気軸など心電図検定対策の判読を学ぶ
+
+両ファイルは同じフォルダに置いておくと、画面内のリンクで相互に行き来できます。
 サーバーやインストールは不要です(JS/CSSをすべて1ファイルにインライン化済み)。
 
 - 学習履歴はそのブラウザのlocalStorageに保存されます
@@ -22,27 +29,31 @@
 
 ```bash
 npm install
-npm run dev      # 開発サーバー (http://localhost:5173)
-npm run build    # 型チェック + 単一HTMLビルド (dist/index.html)
-npm run preview  # ビルド結果のプレビュー
+npm run dev                                   # モニター版 開発サーバー (localhost:5173)
+npm run build                                 # 型チェック + モニター版 単一HTMLビルド (dist/index.html)
+npx vite build --config vite.twelve.config.ts # 12誘導版 単一HTMLビルド (dist-twelve/twelve.html)
+npx tsx scripts/verify12.ts                   # 12誘導モデルの臨床所見を数値検証(30項目)
 ```
 
-`npm run build` は vite-plugin-singlefile により全アセットをインライン化した
-単一の `dist/index.html` を出力します(これをコピーしたものがルートの `心電図トレーナー.html`)。
+どちらも vite-plugin-singlefile により全アセットをインライン化した単一HTMLを出力します。
+12誘導版は `src/twelve/` 配下に独立して実装されています。
 
 ### デプロイ(GitHub Pages)
 
-`docs/index.html` がそのままGitHub Pages(mainブランチ `/docs`)で配信されます。
+`docs/` 配下がそのままGitHub Pages(mainブランチ `/docs`)で配信されます。
 更新手順:
 
 ```bash
 npm run build
-cp dist/index.html docs/index.html
-cp dist/index.html 心電図トレーナー.html
+npx vite build --config vite.twelve.config.ts
+cp dist/index.html docs/index.html            # Pages: モニター版
+cp dist/index.html 心電図トレーナー.html        # ダブルクリック版
+cp dist-twelve/twelve.html docs/12lead/index.html  # Pages: 12誘導版
+cp dist-twelve/twelve.html 12誘導心電図.html    # ダブルクリック版
 git add -A && git commit -m "更新" && git push
 ```
 
-## 機能
+## 機能(モニター版)
 
 ### 1. 波形ライブラリ
 - 21種類の波形を6カテゴリに分類(基本調律/期外収縮/上室性/房室ブロック/致死性/虚血・電解質ほか)
@@ -75,6 +86,27 @@ git add -A && git commit -m "更新" && git push
 | 致死性不整脈 | 心室頻拍(VT) / トルサード・ド・ポアンツ / 心室細動(VF) / 心静止 |
 | 虚血・電解質・その他 | ST上昇(急性心筋梗塞) / テント状T波(高K血症) / ペースメーカー調律 / 筋電図アーチファクト |
 
+## 機能(12誘導版)
+
+心電図検定3〜2級で頻出の12誘導判読に対応した別アプリ。実機プリントアウト風(心電図ペーパー・3列×4段＋調律記録)で12誘導を同期スイープ表示します。
+
+- **学習モード**: 11ケースを切り替え、所見の出る誘導を黄色でハイライト。各ケースに「12誘導のキー所見」「病態の解説」「臨床・看護のポイント」を収載
+- **クイズモード**: 動く12誘導を見て診断名を4択で当てる検定スタイル(全8問)
+- 肢誘導は**心起電力ベクトルを各誘導軸へ投影(余弦則)**して生成するため、電気軸偏位・梗塞部位による極性変化が12誘導上で物理的に正しく現れる。胸部誘導はR波増高テンプレートで生成
+
+### 収録ケース(11種)
+
+| カテゴリ | ケース |
+|---|---|
+| 正常 | 正常12誘導心電図 |
+| 虚血・梗塞 | 急性下壁梗塞 / 急性前壁中隔梗塞 / 急性側壁梗塞 |
+| 伝導障害 | 完全右脚ブロック / 完全左脚ブロック |
+| 肥大 | 左室肥大 |
+| 電気軸 | 左軸偏位 / 右軸偏位 |
+| その他 | WPW症候群 / 心房細動 |
+
+合成モデルの臨床的妥当性は `scripts/verify12.ts`(30項目)で数値検証しています(ST上昇の部位、対側性変化、rSR'、Sokolow-Lyon、軸の極性、デルタ波など)。
+
 ## 技術スタック
 
 - **Vite 7 + React 19 + TypeScript** (strict)
@@ -83,6 +115,7 @@ git add -A && git commit -m "更新" && git push
 - 波形は画像ではなく、P波・QRS・T波を**ガウシアン成分の和として数学的に合成**し、
   不整脈ごとのリズムロジック(RR揺らぎ・伝導比・PQ漸増・房室解離など)でリアルタイム生成
 - Canvas 2D によるスイープ描画(描画ヘッド+消去バー)、Web Audio API による同期音
+- 12誘導版は肢誘導をベクトル投影、胸部誘導をR波増高テンプレートで合成(`src/twelve/`)
 
 ## 参考資料
 

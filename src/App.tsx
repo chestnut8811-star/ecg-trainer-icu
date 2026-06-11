@@ -1,13 +1,17 @@
+import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import Header from './components/Header'
 import SoftKeyNav from './components/SoftKeyNav'
 import LibraryView from './views/LibraryView'
 import QuizView from './views/QuizView'
 import StatsView from './views/StatsView'
+import { installAudioUnlock } from './engine/audio'
 import { useApp } from './store'
 
 export default function App() {
   const view = useApp((s) => s.view)
+  // サウンドON起動: 最初の操作でオーディオを解錠する
+  useEffect(() => installAudioUnlock(), [])
   return (
     <div className="min-h-screen">
       <Header />

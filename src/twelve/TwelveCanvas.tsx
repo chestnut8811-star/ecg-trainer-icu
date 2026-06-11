@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { createTwelve, type LeadId } from './engine'
+import { playQrsBeep } from '../engine/audio'
 import type { TwelveCase } from './cases'
 
 /**
@@ -34,16 +35,22 @@ function hashSeed(s: string): number {
 export default function TwelveCanvas({
   def,
   highlightOn,
+  soundOn = false,
 }: {
   def: TwelveCase
   /** 所見誘導をハイライトするか(クイズ中はfalse) */
   highlightOn: boolean
+  /** QRS同期音を鳴らすか */
+  soundOn?: boolean
 }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const gridRef = useRef<HTMLCanvasElement>(null)
   const traceRef = useRef<HTMLCanvasElement>(null)
   const hiOn = useRef(highlightOn)
   hiOn.current = highlightOn
+  // soundOnは描画ループを再起動させないようrefで参照する
+  const soundRef = useRef(soundOn)
+  soundRef.current = soundOn
 
   useEffect(() => {
     const wrap = wrapRef.current
@@ -204,6 +211,11 @@ export default function TwelveCanvas({
       const t0 = tNow
       const t1 = t0 + dt
       tNow = t1
+
+      // --- QRS同期音(この区間に含まれる拍ごとに「ピッ」) ---
+      if (soundRef.current) {
+        for (const _b of engine.beatsBetween(t0, t1)) playQrsBeep()
+      }
 
       // --- 小窓12誘導(2.5秒窓・同期スイープ) ---
       const sStep = 1 / pxPerSec

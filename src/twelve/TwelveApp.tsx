@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { CASES, CAT_META, caseById, type Cat, type TwelveCase } from './cases'
+import { ensureAudio, installAudioUnlock } from '../engine/audio'
 import TwelveCanvas from './TwelveCanvas'
 
 /** モニター版(基本/不整脈アプリ)へ戻る。file://とGitHub Pagesの両対応 */
@@ -18,7 +19,7 @@ function shuffle<T>(a: T[]): T[] {
   return r
 }
 
-function Header() {
+function Header({ soundOn, onToggleSound }: { soundOn: boolean; onToggleSound: () => void }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bg2/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-3 py-2.5 md:px-6">
@@ -40,20 +41,35 @@ function Header() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={gotoMonitor}
-          className="shrink-0 rounded-lg border border-line2 bg-panel px-2.5 py-1.5 text-xs font-bold text-mute transition-colors hover:border-phos/50 hover:text-phos"
-        >
-          ← モニター版
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleSound}
+            aria-pressed={soundOn}
+            title="QRS同期音のON/OFF"
+            className={`rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors ${
+              soundOn
+                ? 'border-phos/60 bg-phos/15 text-phos'
+                : 'border-line2 bg-panel text-mute hover:border-mute/60 hover:text-ink'
+            }`}
+          >
+            {soundOn ? '♪ 音 ON' : '音 OFF'}
+          </button>
+          <button
+            type="button"
+            onClick={gotoMonitor}
+            className="rounded-lg border border-line2 bg-panel px-2.5 py-1.5 text-xs font-bold text-mute transition-colors hover:border-phos/50 hover:text-phos"
+          >
+            ← モニター版
+          </button>
+        </div>
       </div>
     </header>
   )
 }
 
 /* ============================ 学習モード ============================ */
-function StudyView() {
+function StudyView({ soundOn }: { soundOn: boolean }) {
   const [id, setId] = useState('normal')
   const def = caseById(id)
   const cat = CAT_META[def.cat]
@@ -96,7 +112,7 @@ function StudyView() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
       >
-        <TwelveCanvas def={def} highlightOn />
+        <TwelveCanvas def={def} highlightOn soundOn={soundOn} />
         <p className="mt-1.5 text-center font-dot text-[10px] tracking-widest text-mute">
           25mm/s · 左端の校正波=1mV ·{' '}
           <span className="text-amber-300">黄枠＝所見の出る誘導</span>
@@ -196,7 +212,7 @@ function buildQuiz(n: number): Q[] {
     })
 }
 
-function QuizView() {
+function QuizView({ soundOn }: { soundOn: boolean }) {
   const [phase, setPhase] = useState<'setup' | 'play' | 'result'>('setup')
   const [qs, setQs] = useState<Q[]>([])
   const [idx, setIdx] = useState(0)
@@ -297,7 +313,7 @@ function QuizView() {
       </div>
 
       {/* 診断名がバレないようハイライトはオフ */}
-      <TwelveCanvas def={q.def} highlightOn={false} />
+      <TwelveCanvas def={q.def} highlightOn={false} soundOn={soundOn} />
 
       <h2 className="text-base font-bold md:text-lg">この12誘導心電図の診断は?</h2>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -370,9 +386,16 @@ function QuizView() {
 /* ============================ ルート ============================ */
 export default function TwelveApp() {
   const [mode, setMode] = useState<'study' | 'quiz'>('study')
+  // サウンドON起動: 既定でON、最初の操作でオーディオを解錠する
+  const [soundOn, setSoundOn] = useState(true)
+  useEffect(() => installAudioUnlock(), [])
+  const toggleSound = () => {
+    ensureAudio()
+    setSoundOn((s) => !s)
+  }
   return (
     <div className="min-h-screen">
-      <Header />
+      <Header soundOn={soundOn} onToggleSound={toggleSound} />
       <main className="mx-auto max-w-5xl px-3 pt-4 pb-16 md:px-6">
         <div className="mb-4 grid grid-cols-2 gap-2">
           {([['study', '学習', 'STUDY'], ['quiz', 'クイズ', 'QUIZ']] as const).map(([m, jp, en]) => (
@@ -398,7 +421,7 @@ export default function TwelveApp() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
           >
-            {mode === 'study' ? <StudyView /> : <QuizView />}
+            {mode === 'study' ? <StudyView soundOn={soundOn} /> : <QuizView soundOn={soundOn} />}
           </motion.div>
         </AnimatePresence>
 

@@ -17,6 +17,22 @@ export function ensureAudio(): void {
   void ctx.resume()
 }
 
+/**
+ * 最初のユーザー操作(クリック/キー/タッチ)でAudioContextを解錠する。
+ * サウンドONで起動しても、ブラウザの自動再生制限により実際の発音には
+ * 一度の操作が必要なため、画面に触れた瞬間から鳴り始めるようにする。
+ * 戻り値でリスナーを解除できる。
+ */
+export function installAudioUnlock(): () => void {
+  const events = ['pointerdown', 'keydown', 'touchstart'] as const
+  const unlock = () => {
+    ensureAudio()
+    events.forEach((e) => window.removeEventListener(e, unlock))
+  }
+  events.forEach((e) => window.addEventListener(e, unlock, { passive: true }))
+  return () => events.forEach((e) => window.removeEventListener(e, unlock))
+}
+
 /** 心拍同期音(ピッ) */
 export function playQrsBeep(): void {
   if (!ctx || ctx.state !== 'running') return

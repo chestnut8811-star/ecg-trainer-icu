@@ -39,7 +39,7 @@ export const useApp = create<AppState>()(
       quizPreset: null,
       stats: {},
       quizzesDone: 0,
-      soundOn: false,
+      soundOn: true,
       setView: (view) => set({ view }),
       toggleSound: () => set((s) => ({ soundOn: !s.soundOn })),
       select: (selectedId) => set({ selectedId, view: 'library' }),

@@ -2,6 +2,27 @@ import type { CaseSpec, LeadId, Rhythm } from './engine'
 
 export type Cat = 'normal' | 'ischemia' | 'conduction' | 'hypertrophy' | 'axis' | 'other'
 
+/** 図でハイライトする責任冠動脈の幹 */
+export type VesselKey = 'LMT' | 'LAD' | 'LCx' | 'RCA'
+
+/** 責任冠動脈と閉塞部位によるST変化 */
+export interface Coronary {
+  /** 責任血管の表示名 */
+  vessel: string
+  /** 冠動脈シェーマでハイライトする幹 */
+  vesselKey: VesselKey
+  /** 閉塞部位 */
+  site: string
+  /** シェーマ上の閉塞マーカー位置キー(CoronaryDiagram参照) */
+  mark: string
+  /** 障害領域(壁) */
+  territory: string
+  /** ST上昇を示す誘導(表示用) */
+  stUp: string[]
+  /** 対側性ST低下を示す誘導(表示用) */
+  stDown: string[]
+}
+
 export interface TwelveCase {
   id: string
   name: string
@@ -21,6 +42,8 @@ export interface TwelveCase {
   description: string
   /** 臨床・看護のポイント */
   clinical: string[]
+  /** 責任冠動脈と閉塞部位によるST変化(虚血性のみ) */
+  coronary?: Coronary
 }
 
 export const CAT_META: Record<Cat, { label: string; color: string; border: string }> = {
@@ -85,6 +108,15 @@ export const CASES: TwelveCase[] = [
       '右室梗塞合併時は硝酸薬で血圧が急落しうる—投与前に医師と確認',
       'V3R–V4R(右側胸部誘導)の追加記録が右室梗塞の検出に有用',
     ],
+    coronary: {
+      vessel: '右冠動脈 (RCA)',
+      vesselKey: 'RCA',
+      site: '近位〜中間部（房室結節枝より近位)',
+      mark: 'RCA-mid',
+      territory: '下壁(＋右室)',
+      stUp: ['II', 'III', 'aVF'],
+      stDown: ['I', 'aVL'],
+    },
   },
   {
     id: 'anterior_mi',
@@ -115,6 +147,15 @@ export const CASES: TwelveCase[] = [
       'ポンプ失調(心不全・ショック)の徴候を継続監視',
       'wide territoryのため血行動態が急変しうる',
     ],
+    coronary: {
+      vessel: '左前下行枝 (LAD)',
+      vesselKey: 'LAD',
+      site: '中間部(第1中隔枝より遠位)',
+      mark: 'LAD-mid',
+      territory: '前壁中隔',
+      stUp: ['V1', 'V2', 'V3', 'V4'],
+      stDown: ['II', 'III'],
+    },
   },
   {
     id: 'lateral_mi',
@@ -143,6 +184,15 @@ export const CASES: TwelveCase[] = [
       '12誘導で所見が乏しくても症状が強ければ後壁・側壁梗塞を疑い追加誘導を',
       '再灌流療法の準備と致死性不整脈への警戒',
     ],
+    coronary: {
+      vessel: '左回旋枝 (LCx) / 対角枝',
+      vesselKey: 'LCx',
+      site: '近位部',
+      mark: 'LCx-prox',
+      territory: '側壁',
+      stUp: ['I', 'aVL', 'V5', 'V6'],
+      stDown: ['III', 'aVF'],
+    },
   },
   {
     id: 'pericarditis',
@@ -175,6 +225,130 @@ export const CASES: TwelveCase[] = [
       '胸痛の性状(前傾で軽減・吸気で増悪)や心膜摩擦音を確認',
       '心タンポナーデ徴候(血圧低下・頸静脈怒張・心音減弱)に警戒',
       '心エコー・炎症反応の評価につなげる',
+    ],
+  },
+  {
+    id: 'leftmain',
+    name: '左主幹部閉塞',
+    nameEn: 'Left Main Occlusion',
+    cat: 'ischemia',
+    grade: '1級',
+    hrText: '108 /分',
+    axisText: '正常軸',
+    rhythm: { type: 'regular', rate: 108 },
+    spec: {
+      qrsAxis: 55, tAxis: 25, pAxis: 60,
+      st: {
+        aVR: 0.24, V1: 0.1,
+        I: -0.14, II: -0.14, aVL: -0.08, aVF: -0.1,
+        V4: -0.2, V5: -0.26, V6: -0.22,
+      },
+    },
+    highlight: ['aVR', 'I', 'V5', 'V6'],
+    coronary: {
+      vessel: '左主幹部 (LMT)',
+      vesselKey: 'LMT',
+      site: '左冠動脈主幹部(または重症三枝病変)',
+      mark: 'LMT',
+      territory: '左室広範(前壁＋側壁＋中隔)',
+      stUp: ['aVR', '(V1)'],
+      stDown: ['I', 'II', 'aVF', 'V4', 'V5', 'V6'],
+    },
+    features: [
+      'aVR の ST 上昇(aVR上昇 > V1上昇 が示唆的)',
+      '広範な誘導(I・II・V4–V6)で びまん性 ST 低下',
+      '心原性ショック・致死性不整脈のリスクが極めて高い',
+    ],
+    description:
+      '左冠動脈主幹部の閉塞または高度狭窄。左室の広い領域が一気に虚血となる最重症病態。「aVRのST上昇＋びまん性ST低下」が手がかりで、aVRの上昇がV1を上回るのが特徴。重症三枝病変でも同様のパターンを示す。緊急血行再建を要する。',
+    clinical: [
+      'aVR上昇＋びまん性ST低下を見たら左主幹部/重症三枝病変を疑い直ちに報告',
+      '心原性ショック・心停止に備え緊急カテーテル・補助循環(IABP/PCPS)の準備',
+      '致死性不整脈への即時対応(除細動器を直近に)',
+      'わずかな遅れが致命的—迅速なチーム招集',
+    ],
+  },
+  {
+    id: 'posterior',
+    name: '後壁梗塞',
+    nameEn: 'Posterior MI',
+    cat: 'ischemia',
+    grade: '2–1級',
+    hrText: '70 /分',
+    axisText: '正常軸',
+    rhythm: { type: 'regular', rate: 70 },
+    spec: {
+      qrsAxis: 60, tAxis: 45, pAxis: 60,
+      precordRmul: [2.5, 2.0, 1, 1, 1, 1],
+      precordSmul: [0.3, 0.45, 1, 1, 1, 1],
+      st: { V1: -0.16, V2: -0.24, V3: -0.16, II: 0.1, III: 0.12, aVF: 0.1 },
+      tOverride: { V1: 0.18, V2: 0.24 },
+    },
+    highlight: ['V1', 'V2', 'V3'],
+    coronary: {
+      vessel: '左回旋枝 (LCx) または 右冠動脈 (RCA)',
+      vesselKey: 'LCx',
+      site: '後側壁枝(下後壁を灌流)',
+      mark: 'LCx-dist',
+      territory: '後壁(下側壁)',
+      stUp: ['(背部誘導 V7–V9)'],
+      stDown: ['V1', 'V2', 'V3'],
+    },
+    features: [
+      'V1–V3 の ST 低下(後壁ST上昇の鏡像)',
+      'V1–V2 の R 波増高・幅広いR(後壁Q波の鏡像)',
+      '下壁・側壁梗塞を合併することが多い',
+    ],
+    description:
+      '左室後壁の梗塞。標準12誘導には後壁を直接向く誘導がないため、前胸部誘導V1–V3に「鏡像(mirror image)」としてST低下・R波増高・陽性Tとして現れる。背部誘導(V7–V9)を追加するとST上昇を直接確認できる。回旋枝や右冠動脈の閉塞による。',
+    clinical: [
+      'V1–V3のST低下＋R波増高を見たら後壁梗塞を疑い、背部誘導(V7–V9)を追加記録',
+      '前胸部ST低下を「前壁の虚血」と早合点しない—鏡像の可能性',
+      '下壁・側壁梗塞の合併を12誘導全体で確認',
+      '再灌流療法の適応評価へつなげる',
+    ],
+  },
+  {
+    id: 'anterior_ext',
+    name: '広範前壁梗塞',
+    nameEn: 'Extensive Anterior MI (Proximal LAD)',
+    cat: 'ischemia',
+    grade: '2級',
+    hrText: '100 /分',
+    axisText: '正常軸',
+    rhythm: { type: 'regular', rate: 100 },
+    spec: {
+      qrsAxis: 45, tAxis: 60, pAxis: 60,
+      precordRmul: [0.4, 0.4, 0.5, 0.6, 0.9, 0.9],
+      st: {
+        V1: 0.2, V2: 0.34, V3: 0.36, V4: 0.3, V5: 0.22, V6: 0.14,
+        I: 0.18, aVL: 0.2, aVR: 0.08,
+        II: -0.1, III: -0.16, aVF: -0.12,
+      },
+      tOverride: { V2: 0.6, V3: 0.6, aVL: 0.4 },
+    },
+    highlight: ['V2', 'V3', 'V4', 'I', 'aVL'],
+    coronary: {
+      vessel: '左前下行枝 (LAD)',
+      vesselKey: 'LAD',
+      site: '近位部(第1中隔枝より近位)',
+      mark: 'LAD-prox',
+      territory: '前壁＋中隔＋高位側壁(広範)',
+      stUp: ['V1', 'V2', 'V3', 'V4', 'V5', 'I', 'aVL'],
+      stDown: ['II', 'III', 'aVF'],
+    },
+    features: [
+      'V1–V6 に加え I・aVL でも ST 上昇(広範囲)',
+      '下壁誘導(II・III・aVF)に対側性 ST 低下',
+      '近位LAD閉塞を示唆(中隔枝・対角枝も巻き込む)',
+    ],
+    description:
+      '左前下行枝(LAD)の近位部閉塞による広範な前壁梗塞。前胸部に加え高位側壁(I・aVL)もST上昇し、下壁に対側性ST低下を伴う。前壁中隔梗塞(V1–V4限局)より広範で、左室機能低下・心不全・致死性不整脈のリスクが高い。閉塞が近位ほど障害領域が広がる。',
+    clinical: [
+      '広範な前壁＋高位側壁のST上昇は近位LAD閉塞を示唆—大きな梗塞として対応',
+      'ポンプ失調(心不全・心原性ショック)と致死性不整脈に厳重警戒',
+      '迅速な再灌流療法、除細動器・補助循環の準備',
+      'I・aVLのST上昇(高位側壁)も見落とさない',
     ],
   },
   {

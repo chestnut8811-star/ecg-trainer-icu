@@ -77,6 +77,32 @@ console.log('● 急性側壁梗塞')
   check('V6 の ST 上昇', st('V6') > 0.1, `st=${st('V6').toFixed(2)}`)
 }
 
+console.log('● 左主幹部閉塞(aVR上昇＋びまん性ST低下)')
+{
+  const { net, st } = probe('leftmain')
+  check('aVR の ST 上昇', st('aVR') > 0.12, `st=${st('aVR').toFixed(2)}`)
+  check('aVR上昇 > V1上昇', st('aVR') > st('V1'), `aVR=${st('aVR').toFixed(2)} V1=${st('V1').toFixed(2)}`)
+  const down = (['I', 'II', 'V4', 'V5', 'V6'] as const).filter((l) => st(l) < -0.06)
+  check('広範(4誘導以上)でST低下=びまん性', down.length >= 4, `down=${down.length} (${down.join(',')})`)
+  check('aVR は QRS 陰性のまま', net('aVR') < 0)
+}
+
+console.log('● 後壁梗塞(V1–3鏡像)')
+{
+  const { net, st } = probe('posterior')
+  check('V2 の ST 低下(鏡像)', st('V2') < -0.12, `st=${st('V2').toFixed(2)}`)
+  check('V1 の R 波増高(R優位=鏡像Q)', net('V1') > 0.2, `net=${net('V1').toFixed(2)}`)
+  check('下壁(II)はST上昇傾向(合併)', st('II') > 0.05, `st=${st('II').toFixed(2)}`)
+}
+
+console.log('● 広範前壁梗塞(近位LAD)')
+{
+  const { st } = probe('anterior_ext')
+  check('V2–V4 のST上昇', st('V2') > 0.2 && st('V4') > 0.15)
+  check('高位側壁 I・aVL のST上昇', st('I') > 0.1 && st('aVL') > 0.12, `I=${st('I').toFixed(2)} aVL=${st('aVL').toFixed(2)}`)
+  check('下壁(III)の対側性ST低下', st('III') < -0.08, `st=${st('III').toFixed(2)}`)
+}
+
 console.log('● 急性心膜炎(びまん性ST上昇)')
 {
   const { st } = probe('pericarditis')

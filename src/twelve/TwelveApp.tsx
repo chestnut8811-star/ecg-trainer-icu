@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { CASES, CAT_META, caseById, type Cat, type TwelveCase } from './cases'
+import { CASES, CAT_META, caseById, type Cat, type Coronary, type TwelveCase } from './cases'
 import { ensureAudio, installAudioUnlock } from '../engine/audio'
 import TwelveCanvas from './TwelveCanvas'
+import CoronaryDiagram from './CoronaryDiagram'
 
 /** モニター版(基本/不整脈アプリ)へ戻る。file://とGitHub Pagesの両対応 */
 function gotoMonitor() {
@@ -124,6 +125,57 @@ function StudyView({ soundOn }: { soundOn: boolean }) {
   )
 }
 
+/** 責任冠動脈と閉塞部位によるST変化(シェーマ＋ST↑/↓誘導) */
+function CulpritVessel({ c }: { c: Coronary }) {
+  return (
+    <div className="rounded-xl border border-red-300/30 bg-red-300/5 p-4">
+      <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-red-300">
+        <span className="font-dot text-[10px] tracking-[0.22em]">CULPRIT VESSEL</span>
+        責任血管・閉塞部位とST変化
+      </h3>
+      <div className="grid items-center gap-4 sm:grid-cols-[150px_1fr]">
+        <div className="mx-auto h-44 w-44 shrink-0 rounded-lg border border-line2 bg-[#02060a]">
+          <CoronaryDiagram vesselKey={c.vesselKey} mark={c.mark} />
+        </div>
+        <div className="space-y-2.5 text-sm">
+          <div>
+            <span className="font-dot text-[10px] tracking-widest text-mute">責任血管 </span>
+            <span className="font-bold text-red-300">{c.vessel}</span>
+          </div>
+          <div>
+            <span className="font-dot text-[10px] tracking-widest text-mute">閉塞部位 </span>
+            <span className="font-bold">{c.site}</span>
+          </div>
+          <div>
+            <span className="font-dot text-[10px] tracking-widest text-mute">障害領域 </span>
+            <span className="font-bold">{c.territory}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <span className="font-dot text-[10px] tracking-widest text-mute">ST上昇</span>
+            {c.stUp.map((l) => (
+              <span key={l} className="rounded border border-red/50 bg-red/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-red-300">
+                {l}
+                {l.startsWith('(') ? '' : ' ↑'}
+              </span>
+            ))}
+          </div>
+          {c.stDown.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-dot text-[10px] tracking-widest text-mute">対側性ST低下</span>
+              {c.stDown.map((l) => (
+                <span key={l} className="rounded border border-cyan/40 bg-cyan/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-cyan">
+                  {l}
+                  {l.startsWith('(') ? '' : ' ↓'}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Reading({ def, cat }: { def: TwelveCase; cat: { label: string; color: string; border: string } }) {
   return (
     <div className="space-y-4">
@@ -172,6 +224,8 @@ function Reading({ def, cat }: { def: TwelveCase; cat: { label: string; color: s
           <p className="text-sm leading-relaxed text-ink/90">{def.description}</p>
         </div>
       </div>
+
+      {def.coronary && <CulpritVessel c={def.coronary} />}
 
       <div className="rounded-xl border border-line2 border-l-4 border-l-amber-300/60 bg-panel2 p-4">
         <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-300">
@@ -358,6 +412,11 @@ function QuizView({ soundOn }: { soundOn: boolean }) {
               {q.def.highlight.length > 0 && (
                 <span className="font-dot text-[11px] tracking-widest text-amber-300">
                   KEY: {q.def.highlight.join(' · ')}
+                </span>
+              )}
+              {q.def.coronary && (
+                <span className="font-dot text-[11px] tracking-widest text-red-300">
+                  責任血管: {q.def.coronary.vessel}
                 </span>
               )}
             </div>

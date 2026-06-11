@@ -77,6 +77,28 @@ console.log('● 急性側壁梗塞')
   check('V6 の ST 上昇', st('V6') > 0.1, `st=${st('V6').toFixed(2)}`)
 }
 
+console.log('● 急性心膜炎(びまん性ST上昇)')
+{
+  const { st } = probe('pericarditis')
+  // 広範な誘導でST上昇(下壁・側壁・前胸部)
+  const up = (['I', 'II', 'aVF', 'V3', 'V4', 'V5', 'V6'] as const).filter((l) => st(l) > 0.08)
+  check('広範(6誘導以上)でST上昇=びまん性', up.length >= 6, `up=${up.length} (${up.join(',')})`)
+  check('aVR は対側性にST低下', st('aVR') < -0.05, `st=${st('aVR').toFixed(2)}`)
+  check('単一冠動脈支配に限局しない(下壁も前胸部も上昇)', st('II') > 0.08 && st('V4') > 0.08)
+}
+
+console.log('● 高カリウム血症(テント状T)')
+{
+  const { at } = probe('hyperk12')
+  // T頂点(+0.32s)が高い & 幅が狭い(±0.06sで急減)= 尖鋭
+  const tPeak = at('V3', 0.32)
+  const tFlank = at('V3', 0.42)
+  check('V3 のT波が増高(テント状)', tPeak > 0.7, `T=${tPeak.toFixed(2)}`)
+  check('T波が尖鋭(幅が狭い)', tPeak > tFlank * 2.5, `peak=${tPeak.toFixed(2)} flank=${tFlank.toFixed(2)}`)
+  // P波平低化: II誘導のP(-0.16s)が小さい
+  check('II のP波が平低化', Math.abs(at('II', -0.16)) < 0.06, `P=${at('II', -0.16).toFixed(3)}`)
+}
+
 console.log('● 完全右脚ブロック')
 {
   const { at } = probe('rbbb')

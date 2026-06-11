@@ -47,13 +47,21 @@ export interface CaseSpec {
   pAmp?: number
   /** 心房細動など: P波を消してf波基線にする */
   afNoP?: boolean
+  /** P波振幅の全誘導一律倍率(高K血症のP平低化など)。既定1 */
+  pMul?: number
   /** 胸部誘導R波・S波テンプレートの倍率(長さ6) */
   precordRmul?: number[]
   precordSmul?: number[]
   /** 誘導別ST偏位(mV)。+で上昇、−で低下(対側性変化) */
   st?: Partial<Record<LeadId, number>>
+  /** PR部分の低下(mV・心膜炎)。aVRは逆にPR上昇 */
+  prDep?: number
   /** 誘導別T波の絶対振幅上書き(陰性T・増高T) */
   tOverride?: Partial<Record<LeadId, number>>
+  /** T波振幅の一律倍率(高K血症の増高T)。既定1 */
+  tMul?: number
+  /** T波の幅(sigma)。小さいほど尖る(高K血症のテント状T)。既定0.05 */
+  tSigma?: number
   /** 誘導別にQRS成分を丸ごと差し替え(脚ブロックのrSR'等) */
   special?: Partial<Record<LeadId, Comp[]>>
   /** デルタ波(WPW) */
@@ -125,14 +133,20 @@ export function beatComps(spec: CaseSpec, lead: LeadId): Comp[] {
   comps.push(...qrs)
 
   // --- P波 ---
+  const pMul = spec.pMul ?? 1
   if (!spec.afNoP) {
     const pr = spec.prShort ? 0.1 : 0.16
     if (isLimb) {
-      const amp = (spec.pAmp ?? 0.15) * proj(LIMB_ANGLE[lead], spec.pAxis)
+      const amp = (spec.pAmp ?? 0.15) * pMul * proj(LIMB_ANGLE[lead], spec.pAxis)
       comps.push({ mu: -pr, amp, sigma: 0.022 })
     } else {
-      comps.push({ mu: -pr, amp: PRECORD_P[PRECORDIAL_IDX[lead]], sigma: 0.022 })
+      comps.push({ mu: -pr, amp: PRECORD_P[PRECORDIAL_IDX[lead]] * pMul, sigma: 0.022 })
     }
+  }
+
+  // --- PR部分の低下(心膜炎)。aVRは逆にPR上昇 ---
+  if (spec.prDep) {
+    comps.push({ mu: -0.075, amp: lead === 'aVR' ? spec.prDep : -spec.prDep, sigma: 0.035 })
   }
 
   // --- ST偏位 ---
@@ -140,13 +154,15 @@ export function beatComps(spec: CaseSpec, lead: LeadId): Comp[] {
   if (st) comps.push({ mu: 0.15, amp: st, sigma: 0.062 })
 
   // --- T波 ---
+  const tSig = spec.tSigma ?? 0.05
+  const tMul = spec.tMul ?? 1
   const to = spec.tOverride?.[lead]
   if (to !== undefined) {
-    comps.push({ mu: 0.32, amp: to, sigma: 0.05 })
+    comps.push({ mu: 0.32, amp: to, sigma: tSig })
   } else if (isLimb) {
-    comps.push({ mu: 0.32, amp: 0.35 * proj(LIMB_ANGLE[lead], spec.tAxis), sigma: 0.05 })
+    comps.push({ mu: 0.32, amp: 0.35 * tMul * proj(LIMB_ANGLE[lead], spec.tAxis), sigma: tSig })
   } else {
-    comps.push({ mu: 0.32, amp: PRECORD_T[PRECORDIAL_IDX[lead]], sigma: 0.05 })
+    comps.push({ mu: 0.32, amp: PRECORD_T[PRECORDIAL_IDX[lead]] * tMul, sigma: tSig })
   }
 
   return comps

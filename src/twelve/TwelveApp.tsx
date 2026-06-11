@@ -98,8 +98,8 @@ function StudyView() {
       >
         <TwelveCanvas def={def} highlightOn />
         <p className="mt-1.5 text-center font-dot text-[10px] tracking-widest text-mute">
-          25mm/s · 10mm/mV ·{' '}
-          <span className="text-amber-300">黄色＝所見の出る誘導</span>
+          25mm/s · 左端の校正波=1mV ·{' '}
+          <span className="text-amber-300">黄枠＝所見の出る誘導</span>
         </p>
       </motion.div>
 

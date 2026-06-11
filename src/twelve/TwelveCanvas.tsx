@@ -9,13 +9,13 @@ import type { TwelveCase } from './cases'
  * 全誘導は同一時間軸で同期スイープし、「動く12誘導」として表示する。
  */
 
-// 心電図ペーパー配色(温白色の紙＋ピンクのマス目＋黒トレース)
-const PAPER = '#fffaf7'
-const GRID_MINOR = '#f6d3cd'
-const GRID_MAJOR = '#e7998f'
-const TRACE = '#16130f'
-const LABEL = '#b23b2c'
-const HILITE = 'rgba(255, 206, 64, 0.26)'
+// モニター版に合わせた配色(暗い背景＋蛍光グリーンのトレース)
+const PAPER = '#020604'
+const GRID_MINOR = 'rgba(54, 255, 156, 0.06)'
+const GRID_MAJOR = 'rgba(54, 255, 156, 0.15)'
+const TRACE = '#36ff9c'
+const LABEL = '#36ff9c'
+const HILITE = 'rgba(255, 206, 64, 0.12)'
 
 // 3列×4段の誘導配置(縦に積む)
 const COLUMNS: LeadId[][] = [
@@ -112,7 +112,7 @@ export default function TwelveCanvas({
       drawGrid()
       traceCv.getContext('2d')!.clearRect(0, 0, W, H)
       smallPrev = {}
-      rhythmPrevY = null
+      rhythmPrev = null
       tNow = 0
     }
 
@@ -180,8 +180,10 @@ export default function TwelveCanvas({
       c.strokeRect(padX + 0.5, gridTop + 0.5, W - padX * 2 - 1, H - gridTop - 5)
     }
 
-    let smallPrev: Partial<Record<LeadId, number>> = {}
-    let rhythmPrevY: number | null = null
+    // 前フレームの最終描画点(フレームをまたいで線をつなぐため)
+    type Pt = { x: number; y: number }
+    let smallPrev: Partial<Record<LeadId, Pt>> = {}
+    let rhythmPrev: Pt | null = null
     let tNow = 0
     layout()
 
@@ -218,26 +220,37 @@ export default function TwelveCanvas({
             c.clearRect(p.x, p.y + labelH, ex + gap - (p.x + panelW), panelH - labelH)
           // 消した所はペーパー＆グリッドを復元するため下のgridを見せる→traceは透明
         }
-        c.lineWidth = 1.4
+        c.lineWidth = 1.7
         c.lineJoin = 'round'
+        c.lineCap = 'round'
         c.strokeStyle = TRACE
+        c.shadowColor = TRACE
+        c.shadowBlur = 6
+        const pw = Math.round(panelW)
         for (const p of panels) {
           const top = p.y + labelH + 1
           const bot = p.y + panelH - 1
           c.beginPath()
-          let pen = false
+          let prev = smallPrev[p.lead]
+          let moved = false
           for (let sp = sP0 + 1; sp <= sP1; sp++) {
-            const local = sp % Math.round(panelW)
+            const local = sp % pw
             const x = p.x + local
             const y = clampY(p.midY - engine.sample(p.lead, sp * sStep) * pxPerMv, top, bot)
-            if (!pen || local === 0) {
-              c.moveTo(x, y)
-              pen = true
-            } else c.lineTo(x, y)
+            if (local === 0 || !prev) {
+              c.moveTo(x, y) // 折り返し or 初回はペンを上げて開始
+              moved = true
+            } else {
+              if (!moved) c.moveTo(prev.x, prev.y) // 前フレーム末尾から連結
+              c.lineTo(x, y)
+              moved = true
+            }
+            prev = { x, y }
           }
           c.stroke()
-          smallPrev[p.lead] = sP1 % Math.round(panelW)
+          smallPrev[p.lead] = prev
         }
+        c.shadowBlur = 0
       }
 
       // --- 調律記録(10秒窓・II誘導) ---
@@ -253,21 +266,32 @@ export default function TwelveCanvas({
         const bot = rhythmTop + rhythmH - 2
         c.clearRect(ex, top, gap, bot - top)
         if (ex + gap > W - padX) c.clearRect(padX, top, ex + gap - (W - padX), bot - top)
-        c.lineWidth = 1.4
+        c.lineWidth = 1.9
+        c.lineCap = 'round'
+        c.lineJoin = 'round'
         c.strokeStyle = TRACE
+        c.shadowColor = TRACE
+        c.shadowBlur = 6
         c.beginPath()
-        let pen = false
+        let prev = rhythmPrev
+        let moved = false
         for (let rp = rP0 + 1; rp <= rP1; rp++) {
           const local = rp % span
           const x = padX + local
           const y = clampY(rhythmMid - engine.sample('II', rp * rStep) * pxPerMv, top, bot)
-          if (!pen || local === 0 || rhythmPrevY === null) {
+          if (local === 0 || !prev) {
             c.moveTo(x, y)
-            pen = true
-          } else c.lineTo(x, y)
+            moved = true
+          } else {
+            if (!moved) c.moveTo(prev.x, prev.y)
+            c.lineTo(x, y)
+            moved = true
+          }
+          prev = { x, y }
         }
         c.stroke()
-        rhythmPrevY = 0
+        c.shadowBlur = 0
+        rhythmPrev = prev
       }
     }
     raf = requestAnimationFrame(loop)
@@ -281,10 +305,11 @@ export default function TwelveCanvas({
   return (
     <div
       ref={wrapRef}
-      className="relative w-full overflow-hidden rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.45)]"
+      className="relative w-full overflow-hidden rounded-xl border border-line2 bg-[#020604] shadow-[0_0_40px_rgba(54,255,156,0.06)_inset,0_10px_40px_rgba(0,0,0,0.5)]"
     >
       <canvas ref={gridRef} className="block w-full" />
       <canvas ref={traceRef} className="absolute inset-0" />
+      <div className="scanlines pointer-events-none absolute inset-0" />
     </div>
   )
 }

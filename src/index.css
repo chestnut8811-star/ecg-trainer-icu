@@ -1,10 +1,14 @@
 @import "tailwindcss";
+@import "./fonts-embedded.css";
 
 @theme {
-  --font-sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic",
-    sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
-  --font-dot: "DotGothic16", "IBM Plex Mono", monospace;
+  /* 日本語はOS標準フォントへフォールバック(閉域網で外部取得しない) */
+  --font-sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "BIZ UDPGothic",
+    "Yu Gothic", "YuGothic", "Meiryo", system-ui, sans-serif;
+  /* 欧文等幅は埋め込みのIBM Plex Mono、無ければOS等幅へ */
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", "Consolas",
+    "Menlo", monospace;
+  --font-dot: "IBM Plex Mono", ui-monospace, "Consolas", "Menlo", monospace;
 
   --color-bg: #04070b;
   --color-bg2: #070d13;
